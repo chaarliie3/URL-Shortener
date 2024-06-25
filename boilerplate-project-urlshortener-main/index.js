@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const dns = require('dns');
+const url = require('url');
 const app = express();
 let idUrl = 0;
 let arrayURLs = []
@@ -20,10 +22,23 @@ app.get('/', function(req, res) {
 
 // Your first API endpoint
 app.post('/api/shorturl', function(req, res) {
-  urlString = req.body['url'];
-  idUrl++;
-  arrayURLs.push(urlString);
-  res.json({original_url: urlString, short_url:idUrl})
+  try{
+    urlString = req.body['url'];
+    const parsedUrl = new URL(urlString);
+    let hostname = parsedUrl.hostname;
+    dns.lookup(hostname, (err, addresses, family) => {
+      if (err) {
+        return res.json({error: 'invalid url'});
+      }
+      idUrl++;
+      arrayURLs.push(urlString);
+      res.json({original_url: urlString, short_url:idUrl})
+    });
+  }
+  catch(err){
+    res.json({error: "invalid url"});
+  }
+  
 });
 
 app.get('/api/shorturl/:id', function(req, res) {
